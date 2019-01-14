@@ -1,0 +1,61 @@
+
+sudo: required
+services:
+  - docker
+
+.deploy_template: &github_release
+  provider: releases
+  name: Development Build of ${TRAVIS_BRANCH}
+  body: Automatic development build of $TRAVIS_BRANCH ($TRAVIS_COMMIT) built by Travis CI on $(date +'%F %T %Z').
+  target_commitish: $TRAVIS_COMMIT
+  prerelease: true
+  overwrite: true
+  api_key:
+    secure: LQimDfOZV8fChgGcsyGH/E/6U/M6WIheXB8kFB1MV+7VvQwEFMrhAsHmxsDHCmf9+t0HPdHyo1tKscH4m0fhICAuPzQJ6t0JsSkxylQryyqwI+lHlJjubEyDvcFgA30Aun1iVspoya5ZlBxRjPj67h0YmN2UHypVdLaA8JrYQFUEnJ/Ec2J+f5reObeHPfBddQVSRGZpYQjBs7KYEp7nrZCYo7DnYMBMwrXZTC/tX8a8cf85CLU/UKS7RNzv6iOuSpC0XJMzI2Gf6MSDsNboUVajyikEsb7ZIC7HO6kgyOgWKH2Iz5nTyyAZlG2Hg/lczU8El13xDFpop77mnQAt56aiZc98s02Nhqayyyex7+RxG1Nr9K3zHmPUQqVVdWyaufKsr4GCwRoIzEJ7srOlS7k2/keIdSUXCKM5QkwQdHuE7W9q2DqI0ieP0tW3yGWw2hJHk9OthCV6GJFoNclLUxip/d/jKwsl2nFf0Ldci1C9XvUXhObOS6WRKie64tr57+gGIjBo7iGBpGBrHDH5B5xXbym0LnT7AIeCm/1phpGEZi3jmmc9Sw4Su7ghW1r01hfb1CkzFUzyBoEVe1JzeWnHoz3x8OSfk2LWcdx4I4/ac3DtWWxu1hjW6hFutCcSB7DkeLEb4Rlotv1kf5gBL3LMkkqyjrqKYoXcfH5exxo=
+  skip_cleanup: true
+  on:
+    all_branches: true
+    repo: Razer6/iverilog
+
+jobs:
+  include:
+  - stage: compile
+    name: Linux
+    script:
+    - docker run --rm -ti -v "$(pwd):/builds" -w "/builds" --user="$(id -u):$(id -g)" nioshd/ubuntu-cppdev:latest bash -c "sh autoconf.sh; ./configure --prefix=/builds/iverilog-linux; make install"
+    - zip -r iverilog-linux.zip iverilog-linux
+    before_deploy:
+      - export TRAVIS_TAG=travis-dev-${TRAVIS_BRANCH}
+    deploy:
+      <<: *github_release
+      file: iverilog-linux.zip
+
+  - name: Windows MXE
+    script:
+    - docker run --rm -ti -v "$(pwd):/builds" -w "/builds" --user="$(id -u):$(id -g)" nioshd/mxe:latest bash -c "sh autoconf.sh; ./configure --host=x86_64-w64-mingw32.static --build=x86_64-w64-mingw32.static --prefix=/builds/iverilog-windows; make install"
+    - zip -r iverilog-windows.zip iverilog-windows
+    before_deploy:
+      - export TRAVIS_TAG=travis-dev-${TRAVIS_BRANCH}
+    deploy:
+      <<: *github_release
+      file: iverilog-windows.zip
+
+  - name: OSX
+    os: osx
+    addons:
+      homebrew:
+        packages:
+        - autoconf
+        - automake
+        - zip
+        update: true
+    script:
+    - sh autoconf.sh
+    - "./configure --prefix=$(pwd)/iverilog-osx"
+    - make install
+    - zip -r iverilog-osx.zip iverilog-osx
+    before_deploy:
+      - export TRAVIS_TAG=travis-dev-${TRAVIS_BRANCH}
+    deploy:
+      <<: *github_release
+      file: iverilog-osx.zip
