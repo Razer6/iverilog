@@ -153,7 +153,7 @@ endif
 	mv $*.d dep/$*.d
 
 tables.cc: $(srcdir)/draw_tt.c
-	$(HOSTCC) $(HOSTCFLAGS) -o draw_tt.exe $(srcdir)/draw_tt.c
+	gcc $(HOSTCFLAGS) -o draw_tt.exe $(srcdir)/draw_tt.c
 	./draw_tt.exe > tables.cc
 	rm draw_tt.exe
 
