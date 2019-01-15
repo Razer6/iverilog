@@ -56,6 +56,22 @@ void vpip_add_module_path(const char*path)
       vpip_module_path[vpip_module_path_cnt++] = path;
 }
 
+#ifdef __MINGW32__
+//There is no strndup available on mingw32
+char *strndup(char *str, int chars) {
+    char *buffer;
+    int n;
+
+    buffer = (char *) malloc(chars +1);
+    if (buffer) {
+        for (n = 0; ((n < chars) && (str[n] != 0)) ; n++) buffer[n] = str[n];
+        buffer[n] = 0;
+    }
+
+    return buffer;
+}
+#endif
+
 void vpip_add_env_and_default_module_paths()
 {
       if (disable_default_paths)
@@ -102,13 +118,13 @@ void vpip_add_env_and_default_module_paths()
       s = strrchr(basepath, '\\');
       if (s) *s = 0;
       else {
-	    fprintf(stderr, "%s: Missing first \\ in exe path!\n", argv[0]);
+	    fprintf(stderr, "Missing first \\ in exe path!\n");
 	    exit(1);
       }
       s = strrchr(basepath, '\\');
       if (s) *s = 0;
       else {
-	    fprintf(stderr, "%s: Missing second \\ in exe path!\n", argv[0]);
+	    fprintf(stderr, "Missing second \\ in exe path!\n");
 	    exit(1);
       }
       strcat(s, "\\lib\\ivl" IVL_SUFFIX);
